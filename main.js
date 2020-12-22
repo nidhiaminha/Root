@@ -5,6 +5,7 @@ var path = 'driverdetails.txt';
 const driverDetails = {};
 
 async function createDriver(){
+    // Read the stream from the  input file
     const fileStream = fs.createReadStream(path);
 
     const readLines = readline.createInterface({
@@ -13,7 +14,6 @@ async function createDriver(){
     })
     for await (const line of readLines) {
         const word = line.split(' ');
-
         // create driver details with drivers
         if(word.length === 2 && word[0] === 'Driver'){
             let name = word[1];
@@ -21,7 +21,6 @@ async function createDriver(){
             driverDetails[name].minutes = 0;
             driverDetails[name].miles = 0;
         }
-
     }
     return driverDetails;
 }
@@ -49,6 +48,13 @@ createDriver().then(async function getDriverDetails(driver)  {
             let diffInMilliSeconds = Math.floor(time_end-time_start);
             let minutesDiff = Math.floor(diffInMilliSeconds / 60000);
 
+            // calculate speed for each trip and discard trips with avg speed < 5 or > 100 mph
+            let tripSpeed =  Math.ceil((milesDriven * 60) /minutesDiff);
+            if (tripSpeed < 5 || tripSpeed > 100){
+                minutesDiff = 0;
+                milesDriven = 0
+            }
+
             // calculate total miles and minutes driven     
             driver[driverName].minutes = driver[driverName].minutes + minutesDiff;
             driver[driverName].miles = driver[driverName].miles + milesDriven;
@@ -58,16 +64,26 @@ createDriver().then(async function getDriverDetails(driver)  {
         driver[driverObj].avgSpeed = Math.ceil((driver[driverObj].miles * 60) / driver[driverObj].minutes);
         // handle falsey values
         driver[driverObj].avgSpeed = driver[driverObj].avgSpeed || 0;
-        // if avgSpeed is < 5mph or >100mph
-        if(driver[driverObj].avgSpeed < 5 || driver[driverObj].avgSpeed > 100){
-            driver[driverObj].miles = 0;
-            driver[driverObj].minutes = 0;
-            driver[driverObj].avgSpeed = 0;
-        }
     }
-    console.log(driver);
-}).catch(
-    console.log('rejected')
+
+    let arr = Object.entries(driver);
+    const outputArr = arr.sort((x,y) => (y[1].miles - x[1].miles));
+    let text = '';
+    outputArr.forEach(x => {
+        (x[1].avgSpeed < 5 || x[1].avgSpeed > 100)
+        ?(text = text + `${x[0]}: ${x[1].miles} miles \n`)
+        :(text = text + `${x[0]}: ${x[1].miles} miles @ ${x[1].avgSpeed} mph \n`) 
+    })
+    // Write to the output file
+    fs.writeFile('output.txt', text, (err) => {
+        if(err){
+            throw(err);
+        }
+    })
+    console.log(text);
+    return  
+}).catch((err) =>
+    console.log(err)
 )
 
 
