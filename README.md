@@ -39,5 +39,9 @@ After the calculations are done update the driver details and write to the outpu
         }
     })
  ```
+### Changes to be made
+Please change the path to the input and output fine.
+Input file path on line 4 of main.js.
+Output file path on line 79 of main.js.
 ### Running the Project
-* node main.js
+node main.js
